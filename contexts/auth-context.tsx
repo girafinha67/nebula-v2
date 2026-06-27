@@ -3,53 +3,51 @@
 import {
   createContext,
   useContext,
-  useState,
   useCallback,
   type ReactNode,
 } from 'react'
-import type { User, UserRole } from '@/types'
+import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
+import type { UserRole } from '@/types'
+
+interface AuthUser {
+  id: string
+  name?: string | null
+  email?: string | null
+  image?: string | null
+  role: UserRole
+  plan: string
+}
 
 interface AuthContextValue {
-  user: User | null
+  user: AuthUser | null
   isAuthenticated: boolean
   isAdmin: boolean
-  login: (email: string, password: string) => Promise<void>
-  logout: () => void
-  updateUser: (data: Partial<User>) => void
+  isLoading: boolean
+  logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-// Demo user — replace with real API call
-const DEMO_CLIENT: User = {
-  id: 'usr_demo_001',
-  name: 'Você',
-  email: 'usuario@email.com',
-  role: 'client' as UserRole,
-  plan: 'Pro',
-  planExpiresAt: '2026-07-26',
-  createdAt: '2025-01-15',
-  status: 'active',
-  twoFactorEnabled: false,
-  affiliateCode: 'NEBULA-DEMO',
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const { data: session, status } = useSession()
 
-  const login = useCallback(async (email: string, _password: string) => {
-    // TODO: replace with real API call to /api/auth/login
-    await new Promise((r) => setTimeout(r, 800))
-    const role: UserRole = email.includes('admin') ? 'admin' : 'client'
-    setUser({ ...DEMO_CLIENT, email, role })
-  }, [])
+  const isLoading = status === 'loading'
+  const rawRole = (session?.user as any)?.role as string | undefined
+  const role: UserRole = rawRole === 'ADMIN' ? 'admin' : rawRole === 'OWNER' ? 'owner' : 'client'
 
-  const logout = useCallback(() => {
-    setUser(null)
-  }, [])
+  const user: AuthUser | null = session?.user
+    ? {
+        id: (session.user as any).id,
+        name: session.user.name,
+        email: session.user.email,
+        image: session.user.image,
+        role,
+        plan: (session.user as any).plan ?? 'Free',
+      }
+    : null
 
-  const updateUser = useCallback((data: Partial<User>) => {
-    setUser((prev) => (prev ? { ...prev, ...data } : prev))
+  const logout = useCallback(async () => {
+    await nextAuthSignOut({ callbackUrl: '/login' })
   }, [])
 
   return (
@@ -57,10 +55,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         isAuthenticated: !!user,
-        isAdmin: user?.role === 'admin' || user?.role === 'owner',
-        login,
+        isAdmin: role === 'admin' || role === 'owner',
+        isLoading,
         logout,
-        updateUser,
       }}
     >
       {children}
