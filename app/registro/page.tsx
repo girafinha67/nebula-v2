@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { AuthLayout } from '@/components/auth/auth-layout'
 import { FloatingInput } from '@/components/auth/floating-input'
+import { OAuthButtons } from '@/components/auth/oauth-buttons'
 
 export default function RegistroPage() {
   const router = useRouter()
@@ -32,12 +33,8 @@ export default function RegistroPage() {
       if (!res.ok) { setError(data.error ?? 'Erro ao criar conta.'); return }
 
       const result = await signIn('credentials', { email, password, redirect: false })
-      if (result?.error) {
-        router.push('/login')
-      } else {
-        router.push('/dashboard')
-        router.refresh()
-      }
+      router.push(result?.error ? '/login' : '/dashboard')
+      router.refresh()
     } catch {
       setError('Ocorreu um erro. Tente novamente.')
     } finally {
@@ -56,28 +53,32 @@ export default function RegistroPage() {
         </>
       }
     >
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <FloatingInput label="Nome completo" type="text" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} required />
-        <FloatingInput label="E-mail" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <FloatingInput label="Senha (mín. 8 caracteres)" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+      <div className="space-y-4">
+        <OAuthButtons callbackUrl="/dashboard" />
 
-        {error && <p className="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p>}
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <FloatingInput label="Nome completo" type="text" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} required />
+          <FloatingInput label="E-mail" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <FloatingInput label="Senha (mín. 8 caracteres)" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
 
-        <label className="flex items-start gap-2 text-xs text-muted-foreground">
-          <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 size-4 rounded border-border bg-card accent-[var(--accent)]" />
-          <span>
-            Concordo com os{' '}
-            <Link href="/termos" className="text-foreground underline-offset-4 hover:underline">Termos de Serviço</Link>{' '}
-            e a{' '}
-            <Link href="/privacidade" className="text-foreground underline-offset-4 hover:underline">Política de Privacidade</Link>.
-          </span>
-        </label>
+          {error && <p className="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p>}
 
-        <button type="submit" disabled={loading} className="group inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-medium text-primary-foreground transition-transform hover:scale-[1.02] disabled:opacity-60">
-          {loading ? 'Criando conta...' : 'Criar conta grátis'}
-          <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-        </button>
-      </form>
+          <label className="flex items-start gap-2 text-xs text-muted-foreground">
+            <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 size-4 rounded border-border bg-card accent-[var(--accent)]" />
+            <span>
+              Concordo com os{' '}
+              <Link href="/termos" className="text-foreground underline-offset-4 hover:underline">Termos de Serviço</Link>{' '}
+              e a{' '}
+              <Link href="/privacidade" className="text-foreground underline-offset-4 hover:underline">Política de Privacidade</Link>.
+            </span>
+          </label>
+
+          <button type="submit" disabled={loading} className="group inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-medium text-primary-foreground transition-transform hover:scale-[1.02] disabled:opacity-60">
+            {loading ? 'Criando conta...' : 'Criar conta grátis'}
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+          </button>
+        </form>
+      </div>
     </AuthLayout>
   )
 }
