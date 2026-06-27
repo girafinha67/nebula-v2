@@ -1,5 +1,7 @@
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
+import Google from 'next-auth/providers/google'
+import GitHub from 'next-auth/providers/github'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
@@ -18,6 +20,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: '/login',
   },
   providers: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+    GitHub({
+      clientId: process.env.GITHUB_OAUTH_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_OAUTH_CLIENT_SECRET!,
+    }),
     Credentials({
       name: 'credentials',
       credentials: {
@@ -50,11 +60,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id
-        token.role = (user as any).role
-        token.plan = (user as any).plan
+        token.role = (user as any).role ?? 'CLIENT'
+        token.plan = (user as any).plan ?? 'Free'
+      }
+      // On OAuth sign-in, fetch fresh role/plan from DB
+      if (account && account.provider !== 'credentials') {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: token.email! },
+          select: { id: true, role: true, plan: true },
+        })
+        if (dbUser) {
+          token.id = dbUser.id
+          token.role = dbUser.role
+          token.plan = dbUser.plan
+        }
       }
       return token
     },
@@ -65,6 +87,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         ;(session.user as any).plan = token.plan
       }
       return session
+    },
+    async signIn({ user, account }) {
+      // Auto-create affiliateCode for OAuth users
+      if (account?.provider !== 'credentials' && user.email) {
+        const existing = await prisma.user.findUnique({
+          where: { email: user.email },
+          select: { affiliateCode: true },
+        })
+        if (existing && !existing.affiliateCode) {
+          const code = 'NEBULA-' + Math.random().toString(36).slice(2, 8).toUpperCase()
+          await prisma.user.update({
+            where: { email: user.email },
+            data: { affiliateCode: code },
+          })
+        }
+      }
+      return true
     },
   },
 })
