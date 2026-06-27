@@ -53,7 +53,7 @@ function LoginForm() {
           <input type="checkbox" className="size-4 rounded border-border bg-card accent-[var(--accent)]" />
           Lembrar de mim
         </label>
-        <Link href="/login" className="text-muted-foreground hover:text-foreground">Esqueceu a senha?</Link>
+        <Link href="/esqueci-senha" className="text-muted-foreground hover:text-foreground">Esqueceu a senha?</Link>
       </div>
 
       <button type="submit" disabled={loading} className="group inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-medium text-primary-foreground transition-transform hover:scale-[1.02] disabled:opacity-60">
