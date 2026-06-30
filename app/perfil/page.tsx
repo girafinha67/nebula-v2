@@ -58,8 +58,8 @@ export default function PerfilPage() {
                 </div>
               </div>
               <form className="mt-6 space-y-4" onSubmit={(e) => e.preventDefault()}>
-                <FloatingInput label="Nome completo" defaultValue={user?.name} />
-                <FloatingInput label="E-mail" type="email" defaultValue={user?.email} />
+                <FloatingInput label="Nome completo" defaultValue={user?.name ?? ''} />
+                <FloatingInput label="E-mail" type="email" defaultValue={user?.email ?? ''} />
                 <button type="submit" className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition-transform hover:scale-[1.02]">Salvar alterações</button>
               </form>
             </div>

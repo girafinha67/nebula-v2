@@ -16,6 +16,9 @@ interface AuthUser {
   image?: string | null
   role: UserRole
   plan: string
+  planExpiresAt?: string | null
+  twoFactorEnabled: boolean
+  affiliateCode?: string | null
 }
 
 interface AuthContextValue {
@@ -43,6 +46,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         image: session.user.image,
         role,
         plan: (session.user as any).plan ?? 'Free',
+        planExpiresAt: (session.user as any).planExpiresAt ?? null,
+        twoFactorEnabled: (session.user as any).twoFactorEnabled ?? false,
+        affiliateCode: (session.user as any).affiliateCode ?? null,
       }
     : null
 

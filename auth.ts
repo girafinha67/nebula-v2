@@ -55,6 +55,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           image: user.image,
           role: user.role,
           plan: user.plan,
+          planExpiresAt: user.planExpiresAt?.toISOString() ?? null,
+          twoFactorEnabled: user.twoFactorEnabled,
+          affiliateCode: user.affiliateCode,
         }
       },
     }),
@@ -65,17 +68,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id
         token.role = (user as any).role ?? 'CLIENT'
         token.plan = (user as any).plan ?? 'Free'
+        token.planExpiresAt = (user as any).planExpiresAt ?? null
+        token.twoFactorEnabled = (user as any).twoFactorEnabled ?? false
+        token.affiliateCode = (user as any).affiliateCode ?? null
       }
       // On OAuth sign-in, fetch fresh role/plan from DB
       if (account && account.provider !== 'credentials') {
         const dbUser = await prisma.user.findUnique({
           where: { email: token.email! },
-          select: { id: true, role: true, plan: true },
+          select: {
+            id: true,
+            role: true,
+            plan: true,
+            planExpiresAt: true,
+            twoFactorEnabled: true,
+            affiliateCode: true,
+          },
         })
         if (dbUser) {
           token.id = dbUser.id
           token.role = dbUser.role
           token.plan = dbUser.plan
+          token.planExpiresAt = dbUser.planExpiresAt?.toISOString() ?? null
+          token.twoFactorEnabled = dbUser.twoFactorEnabled
+          token.affiliateCode = dbUser.affiliateCode
         }
       }
       return token
@@ -85,6 +101,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string
         ;(session.user as any).role = token.role
         ;(session.user as any).plan = token.plan
+        ;(session.user as any).planExpiresAt = token.planExpiresAt
+        ;(session.user as any).twoFactorEnabled = token.twoFactorEnabled
+        ;(session.user as any).affiliateCode = token.affiliateCode
       }
       return session
     },
